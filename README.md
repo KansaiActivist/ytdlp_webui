@@ -1,0 +1,2 @@
+# ytdlp_webui
+https://github.com/KansaiActivist/python_ytdlp_downloader のWebUIバージョンです。ありきたりですが。ダウンローダーをサーバーで共有したいときとかに使えます。
