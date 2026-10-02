@@ -1,29 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-YouTube 高画質ダウンローダー - WebUI版(単一ファイル・完全ローカル動作)
-
-実行するとローカルホスト(http://127.0.0.1:5000)にサーバーが立ち上がり、
-自動的にブラウザが開きます。ダウンロードしたファイルはサーバーを実行している
-マシン(=あなたのPC)上に直接保存されます。外部にアップロードされることは
-ありません。
-
-必要なもの:
-    pip install -U yt-dlp flask
-    ffmpeg (映像+音声の結合・デインターレースに必要。PATHが通っている必要があります)
-        Windows: https://www.gyan.dev/ffmpeg/builds/ からダウンロードしPATHに追加
-        Mac:     brew install ffmpeg
-        Linux:   sudo apt install ffmpeg  など
-
-起動方法:
-    python youtube_downloader_webui.py
-    (自動でブラウザが開きます。開かない場合は http://127.0.0.1:5000 にアクセス)
-
-403エラーについて:
-    複数のプレイヤークライアント切り替え・UA偽装・リトライ強化で軽減しますが、
-    完全には防げません。頻発する場合は `pip install -U yt-dlp` で更新してください。
-"""
-
 import os
 import sys
 import uuid
@@ -58,7 +32,6 @@ PORT = 5000
 
 app = Flask(__name__)
 
-# job_id -> ジョブの状態を保持する辞書(スレッド間で共有)
 JOBS = {}
 JOBS_LOCK = threading.Lock()
 
@@ -80,7 +53,7 @@ def new_job():
     job_id = uuid.uuid4().hex[:12]
     with JOBS_LOCK:
         JOBS[job_id] = {
-            "status": "queued",       # queued / downloading / postprocessing / deinterlacing / done / error
+            "status": "queued",       
             "percent": 0.0,
             "speed": "",
             "logs": [],
@@ -104,7 +77,6 @@ def set_job(job_id: str, **kwargs):
 
 
 def deinterlace_file(path: str, job_id: str) -> str:
-    """ffmpegのyadifフィルタでインターレース解除を行い、ファイルを置き換える"""
     if not path or not os.path.exists(path):
         raise FileNotFoundError(f"デインターレース対象が見つかりません: {path}")
 
@@ -221,10 +193,6 @@ def run_download(job_id: str, url: str, quality: str, want_deinterlace: bool, sa
         log(job_id, f"エラー: {msg}{hint}")
 
 
-# ---------------------------------------------------------------------------
-# ルーティング
-# ---------------------------------------------------------------------------
-
 @app.route("/api/start", methods=["POST"])
 def api_start():
     data = request.get_json(force=True, silent=True) or {}
@@ -264,10 +232,6 @@ def api_ffmpeg_check():
 def index():
     return Response(INDEX_HTML, mimetype="text/html")
 
-
-# ---------------------------------------------------------------------------
-# フロントエンド(単一ファイルに埋め込み)
-# ---------------------------------------------------------------------------
 
 INDEX_HTML = r"""<!DOCTYPE html>
 <html lang="ja">
@@ -386,7 +350,6 @@ INDEX_HTML = r"""<!DOCTYPE html>
   .go-btn:active{transform:scale(0.99);}
   .go-btn:disabled{background:var(--panel2);color:var(--muted);cursor:not-allowed;}
 
-  /* --- 右側:信号ログパネル(シグネチャ要素) --- */
   .scope{
     position:relative;height:64px;border:1px solid var(--border);border-radius:8px;
     background:
@@ -454,7 +417,6 @@ INDEX_HTML = r"""<!DOCTYPE html>
   </header>
 
   <div class="grid">
-    <!-- 左: 操作パネル -->
     <div class="panel">
       <h2>Source</h2>
       <label>動画URL</label>
@@ -483,7 +445,6 @@ INDEX_HTML = r"""<!DOCTYPE html>
       <button class="go-btn" id="goBtn" onclick="startDownload()">ダウンロード開始</button>
     </div>
 
-    <!-- 右: 信号ログパネル -->
     <div class="panel">
       <h2>Signal</h2>
       <div class="scope" id="scope">
